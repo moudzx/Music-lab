@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Music lab</title>
+<style>
+:root{--d:#0f380f;--m:#306230;--l:#8bac0f;--p:#9bbc0f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--p);color:var(--d);font:14px/1.4 "Courier New",Consolas,monospace}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:26px;margin:0 0 4px;letter-spacing:-1px}
+h2{font-size:14px;margin:0 0 10px;padding-bottom:6px;border-bottom:2px solid var(--d)}
+#status{margin:0 0 14px;color:var(--m)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+button,select,label.btn{font:inherit;color:var(--p);background:var(--d);border:2px solid var(--d);padding:6px 10px;cursor:pointer;border-radius:0}
+button:hover,label.btn:hover{background:var(--m);border-color:var(--m)}
+button:active{transform:translate(1px,1px)}
+button.alt{background:transparent;color:var(--d)}
+button.alt:hover{background:var(--l)}
+button:focus-visible,select:focus-visible,input:focus-visible,label.btn:focus-within{outline:3px solid var(--d);outline-offset:2px}
+button:disabled{opacity:.4;cursor:default}
+select{background:var(--p);color:var(--d)}
+#wrap{border:3px solid var(--d);background:var(--l);position:relative}
+#wave{display:block;width:100%;height:220px;cursor:crosshair;touch-action:none}
+#info{display:flex;justify-content:space-between;margin:6px 0 16px;color:var(--m);flex-wrap:wrap;gap:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.card{border:3px solid var(--d);padding:12px;background:var(--p)}
+.row{display:flex;align-items:center;gap:8px;margin:0 0 8px}
+.row span.n{min-width:64px}
+.row input[type=range]{flex:1;accent-color:var(--d);min-width:0}
+.row output{min-width:48px;text-align:right}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+input[type=file]{display:none}
+#drop{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;pointer-events:none;color:var(--m)}
+@media(prefers-reduced-motion:no-preference){button{transition:background .1s}}
+</style>
+</head>
+<body>
+<main>
+<h1>Music lab</h1>
+<p id="status">Load an audio file or generate a demo loop.</p>
+<div class="bar">
+<label class="btn" tabindex="0">Open file<input id="file" type="file" accept="audio/*"></label>
+<button id="demo" class="alt">Generate demo</button>
+<button id="play">Play</button>
+<button id="stop" class="alt">Stop</button>
+<label><input id="lp" type="checkbox"> Loop</label>
+<button id="undo" class="alt">Undo</button>
+<button id="redo" class="alt">Redo</button>
+<button id="export">Export WAV</button>
+</div>
+<div id="wrap"><canvas id="wave"></canvas><div id="drop">Drop an audio file here<br>Drag on the waveform to select a region</div></div>
+<div id="info"><span id="i1"></span><span id="i2"></span></div>
+
+<div class="grid">
+<section class="card"><h2>Presets</h2>
+<div class="btns">
+<button data-p="chip">Chiptune</button>
+<button data-p="lofi">Lo-fi</button>
+<button data-p="night">Nightcore</button>
+<button data-p="vapor">Vaporwave</button>
+<button data-p="phone">Telephone</button>
+</div></section>
+
+<section class="card"><h2>Edit selection</h2>
+<div class="btns">
+<button data-o="trim">Trim to</button>
+<button data-o="cut">Cut</button>
+<button data-o="copy">Copy</button>
+<button data-o="paste">Paste</button>
+<button data-o="silence">Silence</button>
+<button data-o="reverse">Reverse</button>
+<button data-o="fin">Fade in</button>
+<button data-o="fout">Fade out</button>
+<button data-o="norm">Normalize</button>
+</div></section>
+
+<section class="card"><h2>8-bit crusher</h2>
+<div class="row"><span class="n">Rate</span><input id="br" type="range" min="1000" max="22050" step="50" value="8000"><output></output></div>
+<div class="row"><span class="n">Bits</span><input id="bb" type="range" min="1" max="8" step="1" value="4"><output></output></div>
+<div class="row"><span class="n">Drive</span><input id="bd" type="range" min="1" max="10" step="0.5" value="3"><output></output></div>
+<button data-o="crush">Apply 8-bit</button></section>
+
+<section class="card"><h2>Speed and pitch</h2>
+<div class="row"><span class="n">Factor</span><input id="sp" type="range" min="0.25" max="3" step="0.05" value="1.25"><output></output></div>
+<button data-o="speed">Apply</button></section>
+
+<section class="card"><h2>Filter</h2>
+<div class="row"><span class="n">Cutoff</span><input id="fc" type="range" min="100" max="12000" step="50" value="1200"><output></output></div>
+<div class="row"><select id="ft"><option value="lp">Low pass</option><option value="hp">High pass</option></select></div>
+<button data-o="filter">Apply</button></section>
+
+<section class="card"><h2>Echo and distortion</h2>
+<div class="row"><span class="n">Delay</span><input id="ed" type="range" min="40" max="800" step="10" value="280"><output></output></div>
+<div class="row"><span class="n">Feedback</span><input id="ef" type="range" min="0" max="0.9" step="0.05" value="0.45"><output></output></div>
+<div class="row"><span class="n">Mix</span><input id="em" type="range" min="0" max="1" step="0.05" value="0.5"><output></output></div>
+<div class="btns"><button data-o="echo">Apply echo</button><button data-o="dist">Distort</button></div></section>
+
+<section class="card"><h2>Remix</h2>
+<div class="row"><select id="cn"><option>4</option><option selected>8</option><option>16</option><option>32</option></select>
+<select id="cm"><option value="shuffle">Shuffle slices</option><option value="flip">Flip some slices</option><option value="stutter">Stutter</option><option value="rev">Reverse order</option></select></div>
+<div class="btns"><button data-o="chop">Chop and remix</button></div>
+<div class="row" style="margin-top:10px"><span class="n">Repeat</span><input id="rp" type="range" min="2" max="16" step="1" value="4"><output></output></div>
+<button data-o="rep">Repeat region</button></section>
+</div>
+</main>
+<script>
+const $=id=>document.getElementById(id)
+let ctx,data=null,undo=[],redo=[],clip=null,sel=null,cur=0,src=null,t0=0,o0=0,playing=false,drag=null
+const cv=$('wave'),g=cv.getContext('2d'),D='#0f380f',M='#306230'
+
+const AC=()=>ctx||(ctx=new(window.AudioContext||window.webkitAudioContext)())
+const len=()=>data.ch[0].length
+const range=()=>sel&&sel.b-sel.a>1?[sel.a,sel.b]:[0,len()]
+const say=t=>$('status').textContent=t
+const cat=(...p)=>{const o=new Float32Array(p.reduce((s,x)=>s+x.length,0));let k=0;for(const x of p){o.set(x,k);k+=x.length}return o}
+
+function commit(d,keep){
+  undo.push(data);if(undo.length>30)undo.shift()
+  const changed=!data||d.ch[0].length!==data.ch[0].length
+  data=d;redo=[]
+  if(!keep||changed)sel=null
+  cur=Math.min(cur,len());refresh()
+}
+function op(fn,msg){
+  if(!data)return say('Load audio first.')
+  stop();const[a,b]=range()
+  commit({sr:data.sr,ch:data.ch.map((c,i)=>fn(c,a,b,i))},true)
+  if(msg)say(msg)
+}
+
+async function load(f){
+  try{
+    const ab=await AC().decodeAudioData(await f.arrayBuffer())
+    stop();data=null;undo=[];redo=[]
+    commit({sr:ab.sampleRate,ch:[...Array(Math.min(ab.numberOfChannels,2))].map((_,i)=>ab.getChannelData(i).slice())})
+    say('Loaded '+f.name)
+  }catch(e){say('Could not decode that file. Try WAV, MP3 or OGG.')}
+}
+function demo(){
+  const sr=44100,bpm=128,st=60/bpm/2,n=Math.floor(sr*st*32),o=new Float32Array(n)
+  const notes=[57,60,64,69,64,60,57,60,55,59,62,67,62,59,55,59]
+  for(let i=0;i<n;i++){
+    const s=Math.floor(i/sr/st),f=440*Math.pow(2,(notes[s%16]-69)/12),t=(i/sr)%st
+    const e=Math.exp(-t*9),ph=(i/sr*f)%1
+    const bass=Math.sign(Math.sin(2*Math.PI*(i/sr)*(s%8<4?55:49)))*.18
+    const kick=s%2==0?Math.sin(2*Math.PI*(60*Math.exp(-t*18)+30)*t)*Math.exp(-t*12)*.6:0
+    o[i]=(ph*2-1)*.28*e+bass*(1-t/st*.4)+kick
+  }
+  stop();data=null;undo=[];redo=[];commit({sr,ch:[o]});say('Demo loop ready. Try the Chiptune preset.')
+}
+
+function draw(){
+  const w=cv.width=cv.clientWidth*devicePixelRatio,h=cv.height=cv.clientHeight*devicePixelRatio
+  g.clearRect(0,0,w,h)
+  $('drop').style.display=data?'none':'flex'
+  if(!data)return
+  const n=len(),c=data.ch[0],mid=h/2
+  g.fillStyle=D
+  for(let x=0;x<w;x++){
+    const i0=Math.floor(x/w*n),i1=Math.max(i0+1,Math.floor((x+1)/w*n)),s=Math.max(1,Math.floor((i1-i0)/48))
+    let lo=1,hi=-1
+    for(let i=i0;i<i1;i+=s){const v=c[i];if(v<lo)lo=v;if(v>hi)hi=v}
+    g.fillRect(x,mid-Math.min(1,hi)*mid*.92,1,Math.max(1,(hi-lo)*mid*.92))
+  }
+  if(sel&&sel.b>sel.a){g.fillStyle='rgba(15,56,15,.28)';g.fillRect(sel.a/n*w,0,(sel.b-sel.a)/n*w,h)}
+  const p=pos();g.fillStyle=M;g.fillRect(Math.floor(p/n*w),0,Math.max(2,devicePixelRatio*2),h)
+}
+function pos(){
+  if(!playing)return cur
+  const[a,b]=range();let p=o0+(ctx.currentTime-t0)*data.sr
+  if($('lp').checked&&p>=b)p=a+(p-a)%(b-a)
+  return Math.min(p,len())
+}
+function refresh(){
+  draw()
+  if(!data){$('i1').textContent='';$('i2').textContent='';return}
+  const s=len()/data.sr
+  $('i1').textContent=s.toFixed(2)+' s, '+data.sr+' Hz, '+data.ch.length+' ch'
+  const[a,b]=range();$('i2').textContent=sel&&sel.b>sel.a?'Selection '+(a/data.sr).toFixed(2)+' to '+(b/data.sr).toFixed(2)+' s':'No selection'
+  $('undo').disabled=!undo.length||!undo[undo.length-1];$('redo').disabled=!redo.length
+}
+function tick(){if(playing){draw()}requestAnimationFrame(tick)}
+
+function play(){
+  if(!data)return
+  if(playing){cur=pos();stop();return}
+  const c=AC();c.resume()
+  const ab=c.createBuffer(data.ch.length,len(),data.sr);data.ch.forEach((x,i)=>ab.copyToChannel(x,i))
+  const s=c.createBufferSource();s.buffer=ab;s.connect(c.destination)
+  const[a,b]=range(),has=sel&&sel.b-sel.a>1
+  if(!has&&cur>=len()-1)cur=0
+  const st=has&&(cur<a||cur>=b)?a:cur
+  if($('lp').checked){s.loop=true;s.loopStart=a/data.sr;s.loopEnd=b/data.sr;s.start(0,st/data.sr)}
+  else s.start(0,st/data.sr,(b-st)/data.sr)
+  s.onended=()=>{if(src===s){playing=false;src=null;$('play').textContent='Play';cur=has?a:cur;draw()}}
+  src=s;t0=c.currentTime;o0=st;playing=true;$('play').textContent='Pause'
+}
+function stop(){
+  if(src){const s=src;src=null;s.onended=null;try{s.stop()}catch(e){}}
+  playing=false;$('play').textContent='Play'
+}
+
+function wav(){
+  const ch=data.ch.length,n=len(),buf=new ArrayBuffer(44+n*ch*2),v=new DataView(buf)
+  const w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))}
+  w(0,'RIFF');v.setUint32(4,36+n*ch*2,true);w(8,'WAVEfmt ');v.setUint32(16,16,true);v.setUint16(20,1,true)
+  v.setUint16(22,ch,true);v.setUint32(24,data.sr,true);v.setUint32(28,data.sr*ch*2,true);v.setUint16(32,ch*2,true);v.setUint16(34,16,true)
+  w(36,'data');v.setUint32(40,n*ch*2,true)
+  let k=44
+  for(let i=0;i<n;i++)for(let j=0;j<ch;j++){const x=Math.max(-1,Math.min(1,data.ch[j][i]));v.setInt16(k,x<0?x*32768:x*32767,true);k+=2}
+  return new Blob([buf],{type:'audio/wav'})
+}
+
+const V=id=>+$(id).value
+const copyOf=(c,a,b,f)=>{const o=c.slice();f(o);return o}
+
+const ops={
+  trim:()=>op((c,a,b)=>c.slice(a,b),'Trimmed.'),
+  cut:()=>op((c,a,b,i)=>{if(i==0)clip=[];clip[i]=c.slice(a,b);return cat(c.subarray(0,a),c.subarray(b))},'Cut.'),
+  copy:()=>{if(!data)return;const[a,b]=range();clip=data.ch.map(c=>c.slice(a,b));say('Copied.')},
+  paste:()=>{
+    if(!data||!clip)return say('Nothing to paste.')
+    const p=sel?sel.a:Math.floor(cur);stop()
+    commit({sr:data.sr,ch:data.ch.map((c,i)=>cat(c.subarray(0,p),clip[i]||clip[0],c.subarray(p)))});say('Pasted.')
+  },
+  silence:()=>op((c,a,b)=>copyOf(c,a,b,o=>o.fill(0,a,b)),'Silenced.'),
+  reverse:()=>op((c,a,b)=>copyOf(c,a,b,o=>o.subarray(a,b).reverse()),'Reversed.'),
+  fin:()=>op((c,a,b)=>copyOf(c,a,b,o=>{for(let i=a;i<b;i++)o[i]*=(i-a)/(b-a)}),'Faded in.'),
+  fout:()=>op((c,a,b)=>copyOf(c,a,b,o=>{for(let i=a;i<b;i++)o[i]*=1-(i-a)/(b-a)}),'Faded out.'),
+  norm:()=>{
+    if(!data)return
+    const[a,b]=range();let pk=0
+    data.ch.forEach(c=>{for(let i=a;i<b;i++)pk=Math.max(pk,Math.abs(c[i]))})
+    const k=pk?.98/pk:1
+    op((c,a,b)=>copyOf(c,a,b,o=>{for(let i=a;i<b;i++)o[i]*=k}),'Normalized.')
+  },
+  crush:()=>{
+    if(!data)return
+    const step=data.sr/V('br'),lv=Math.pow(2,V('bb'))-1,dr=V('bd'),nt=Math.tanh(dr)
+    op((c,a,b)=>copyOf(c,a,b,o=>{
+      for(let i=a;i<b;i++){
+        const j=a+Math.floor(Math.floor((i-a)/step)*step)
+        const v=Math.tanh(c[j]*dr)/nt
+        o[i]=Math.round((v*.5+.5)*lv)/lv*2-1
+      }
+    }),'8-bit applied.')
+  },
+  speed:()=>{
+    const f=V('sp')
+    op((c,a,b)=>{
+      const m=Math.floor((b-a)/f),r=new Float32Array(m)
+      for(let i=0;i<m;i++){const x=a+i*f,j=Math.floor(x),t=x-j;r[i]=c[j]*(1-t)+(c[Math.min(j+1,c.length-1)])*t}
+      return cat(c.subarray(0,a),r,c.subarray(b))
+    },'Speed set to '+f+'x.')
+  },
+  filter:()=>{
+    const k=Math.exp(-2*Math.PI*V('fc')/data.sr),hp=$('ft').value=='hp'
+    op((c,a,b)=>copyOf(c,a,b,o=>{let y=0;for(let i=a;i<b;i++){y=(1-k)*c[i]+k*y;o[i]=hp?c[i]-y:y}}),'Filter applied.')
+  },
+  echo:()=>{
+    if(!data)return
+    const d=Math.floor(V('ed')/1000*data.sr),fb=V('ef'),mx=V('em')
+    op((c,a,b)=>copyOf(c,a,b,o=>{
+      const w=new Float32Array(b-a)
+      for(let i=0;i<b-a;i++){w[i]=c[a+i]+(i>=d?w[i-d]*fb:0);o[a+i]=c[a+i]*(1-mx)+w[i]*mx}
+    }),'Echo applied.')
+  },
+  dist:()=>op((c,a,b)=>copyOf(c,a,b,o=>{for(let i=a;i<b;i++)o[i]=Math.tanh(c[i]*5)*.8}),'Distorted.'),
+  chop:()=>{
+    const n=+$('cn').value,m=$('cm').value
+    let o=[...Array(n).keys()],r=o.map(()=>false)
+    if(m=='shuffle')o.sort(()=>Math.random()-.5)
+    if(m=='flip')r=r.map(()=>Math.random()<.5)
+    if(m=='stutter')o=o.map(i=>i-i%4)
+    if(m=='rev')o.reverse()
+    op((c,a,b)=>{
+      const s=Math.floor((b-a)/n)
+      const parts=o.map((k,j)=>{const p=c.slice(a+k*s,a+(k+1)*s);return r[j]?p.reverse():p})
+      return cat(c.subarray(0,a),...parts,c.subarray(a+n*s))
+    },'Remixed into '+n+' slices.')
+  },
+  rep:()=>{const n=V('rp');op((c,a,b)=>cat(c.subarray(0,a),...Array(n).fill(c.slice(a,b)),c.subarray(b)),'Repeated '+n+' times.')}
+}
+
+const set=(id,v)=>{$(id).value=v;$(id).dispatchEvent(new Event('input'))}
+const presets={
+  chip:()=>{set('br',8000);set('bb',4);set('bd',3);ops.crush()},
+  lofi:()=>{set('br',14000);set('bb',6);set('bd',1.5);ops.crush()},
+  night:()=>{set('sp',1.3);ops.speed()},
+  vapor:()=>{set('sp',0.78);ops.speed()},
+  phone:()=>{set('fc',300);set('ft','hp');ops.filter();set('fc',3400);set('ft','lp');ops.filter()}
+}
+
+document.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>ops[b.dataset.o]())
+document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>data?presets[b.dataset.p]():say('Load audio first.'))
+document.querySelectorAll('input[type=range]').forEach(r=>{const o=r.parentNode.querySelector('output');const u=()=>o.textContent=r.value;r.addEventListener('input',u);u()})
+
+$('file').onchange=e=>e.target.files[0]&&load(e.target.files[0])
+$('demo').onclick=demo
+$('play').onclick=play
+$('stop').onclick=()=>{stop();cur=sel?sel.a:0;draw()}
+$('undo').onclick=()=>{if(!undo.length||!undo[undo.length-1])return;stop();redo.push(data);data=undo.pop();sel=null;cur=0;refresh()}
+$('redo').onclick=()=>{if(!redo.length)return;stop();undo.push(data);data=redo.pop();sel=null;cur=0;refresh()}
+$('export').onclick=()=>{
+  if(!data)return say('Load audio first.')
+  const a=document.createElement('a');a.href=URL.createObjectURL(wav());a.download='remix.wav';a.click()
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000)
+}
+
+const at=e=>{const r=cv.getBoundingClientRect();return Math.max(0,Math.min(len(),Math.floor((e.clientX-r.left)/r.width*len())))}
+cv.onpointerdown=e=>{if(!data)return;cv.setPointerCapture(e.pointerId);drag={s:at(e),x:e.clientX}}
+cv.onpointermove=e=>{
+  if(!drag)return
+  if(Math.abs(e.clientX-drag.x)>3){const p=at(e);sel={a:Math.min(drag.s,p),b:Math.max(drag.s,p)};refresh()}
+}
+cv.onpointerup=e=>{
+  if(!drag)return
+  if(Math.abs(e.clientX-drag.x)<=3){sel=null;cur=drag.s;if(playing){stop();play()}}
+  drag=null;refresh()
+}
+addEventListener('resize',draw)
+addEventListener('keydown',e=>{
+  if(e.target.matches('input,select'))return
+  if(e.code=='Space'){e.preventDefault();play()}
+  if((e.ctrlKey||e.metaKey)&&e.key=='z'){e.preventDefault();$('undo').click()}
+})
+addEventListener('dragover',e=>e.preventDefault())
+addEventListener('drop',e=>{e.preventDefault();e.dataTransfer.files[0]&&load(e.dataTransfer.files[0])})
+refresh();tick()
+</script>
+</body>
+</html>
