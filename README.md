@@ -1,10 +1,12 @@
-# Music-lab
+# Ptolemaea
 
-A browser-based music editor and remixer.
+Browser audio editor and remixer with waveform region editing, an 8-bit crusher, filters, echo, slice-based remixing, one-click presets and in-browser MP3 or WAV export. Built with vanilla JavaScript and Web Audio, and runs offline as a single file.
 
-<img width="3072" height="2174" alt="Screenshot 2026-09-30 at 02-23-10 Music lab" src="https://github.com/user-attachments/assets/2f246bb9-09fe-49b3-ac2f-ef995711dd49" />
+## [Website](https://moudzx.github.io/Ptolemaea)
 
----
+<img width="3072" height="2342" alt="Screenshot 2026-09-30 at 09-24-37 Ptolemaea" src="https://github.com/user-attachments/assets/de3d319c-921e-4603-8dc0-4f50f152a459" />
+
+
 ## Presets
 
 | Preset | Sound |
@@ -65,4 +67,5 @@ Start with 8000 Hz, 4 bits, drive 3 for a console feel.
 
 ## Formats
 
-Opens any audio format your browser can play, including WAV, MP3, OGG and AAC. Exports 16-bit WAV.
+Opens any audio format your browser can play, including WAV, MP3, OGG and AAC. Exports as MP3 at 128 to 320 kbps or 16-bit WAV.
+
